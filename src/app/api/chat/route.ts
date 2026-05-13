@@ -8,10 +8,12 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-lite",
-      systemInstruction: "You are a Dutch language tutor. The user is transitioning from A2 to B1 level. " +
-        "Speak in clear, B1-level Dutch. Keep your responses short and conversational. " +
-        "If the user makes a grammatical error, provide a brief correction in English at the end."
+      model: "gemini-flash-latest",
+      systemInstruction: "You are a friendly, natural Dutch language tutor named 'Lars'. " +
+        "The user is at a B1 level. Speak like a real person, not a textbook. " +
+        "Use natural fillers occasionally (e.g., 'nou', 'eigenlijk'). " +
+        "Keep responses short (1-2 sentences) to keep the flow alive. " +
+        "If they make a mistake, just correct them naturally in your response without making it a big lesson unless it's a major error."
     });
 
     const history = messages.slice(0, -1);

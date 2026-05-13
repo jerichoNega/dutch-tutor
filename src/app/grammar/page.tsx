@@ -1,135 +1,211 @@
 "use client";
 
 import { useState } from "react";
-import { B1_GRAMMAR } from "@/lib/grammar";
-import { GraduationCap, ArrowRight, CheckCircle2, Volume2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { COUTINHO_CURRICULUM, Lesson } from "@/lib/curriculum";
+import { 
+  BookOpen, 
+  Lock, 
+  CheckCircle, 
+  Play, 
+  GraduationCap, 
+  ChevronRight,
+  Loader2,
+  Undo2
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Quiz } from "@/components/Quiz";
 
 export default function GrammarPage() {
-  const [selectedLesson, setSelectedLesson] = useState<any>(null);
+  const [curriculum, setCurriculum] = useState<Lesson[]>(COUTINHO_CURRICULUM);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
 
-  const speak = (text: string) => {
-    if (typeof window !== "undefined") {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "nl-NL";
-      utterance.rate = 0.8;
-      window.speechSynthesis.speak(utterance);
+  const startLesson = async (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    setIsGeneratingQuiz(true);
+    try {
+      const response = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          lessonId: lesson.id,
+          topic: lesson.topic,
+          grammarFocus: lesson.grammarFocus
+        }),
+      });
+      const data = await response.json();
+      if (data.questions) {
+        setQuizQuestions(data.questions);
+      }
+    } catch (error) {
+      console.error("Quiz Error:", error);
+    } finally {
+      setIsGeneratingQuiz(false);
     }
   };
 
+  const handleQuizComplete = (score: number) => {
+    // Unlock next lesson if score is good enough (e.g., > 3/5)
+    if (score >= 3) {
+      setCurriculum(prev => {
+        const idx = prev.findIndex(l => l.id === selectedLesson?.id);
+        const next = [...prev];
+        next[idx].status = "completed";
+        if (idx + 1 < next.length) {
+          next[idx + 1].status = "available";
+        }
+        return next;
+      });
+    }
+    setShowQuiz(false);
+    setQuizQuestions([]);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Grammar Vault</h2>
-        <p className="mt-2 text-slate-500">Perfect your Dutch sentence structure and advanced rules.</p>
+    <div className="max-w-6xl mx-auto pb-20">
+      <div className="mb-12">
+        <h2 className="text-4xl font-black tracking-tight text-slate-900">Grammar Vault</h2>
+        <p className="mt-2 text-slate-500 text-lg italic">The Coutinho Method: Structured B1 Progress</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          {B1_GRAMMAR.map((lesson) => (
-            <button
-              key={lesson.id}
-              onClick={() => setSelectedLesson(lesson)}
-              className={cn(
-                "w-full p-6 rounded-2xl border text-left transition-all group",
-                selectedLesson?.id === lesson.id
-                  ? "bg-slate-900 border-slate-900 text-white shadow-xl"
-                  : "bg-white border-slate-200 text-slate-900 hover:border-orange-500 hover:shadow-md"
-              )}
-            >
-              <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* Course Map */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-slate-900 p-8 rounded-3xl text-white relative overflow-hidden">
+            <h3 className="text-xl font-bold mb-2">Jouw Voortgang</h3>
+            <div className="text-4xl font-black text-orange-500">25%</div>
+            <p className="text-slate-400 text-sm mt-1">Nog 3 hoofdstukken tot B1+</p>
+            <div className="mt-6 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-orange-500 w-1/4 rounded-full" />
+            </div>
+            <GraduationCap className="absolute -right-4 -bottom-4 h-32 w-32 text-slate-800 rotate-12" />
+          </div>
+
+          <div className="space-y-4">
+            {curriculum.map((lesson, idx) => (
+              <motion.button
+                key={lesson.id}
+                whileHover={lesson.status !== "locked" ? { x: 5 } : {}}
+                onClick={() => lesson.status !== "locked" && startLesson(lesson)}
+                disabled={lesson.status === "locked"}
+                className={cn(
+                  "w-full flex items-center gap-6 p-6 rounded-3xl border-2 transition-all text-left group relative",
+                  selectedLesson?.id === lesson.id 
+                    ? "border-orange-500 bg-orange-50 ring-4 ring-orange-100" 
+                    : "border-slate-100 bg-white hover:border-slate-200",
+                  lesson.status === "locked" && "opacity-60 grayscale cursor-not-allowed"
+                )}
+              >
                 <div className={cn(
-                  "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                  selectedLesson?.id === lesson.id ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-600"
+                  "h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl font-black shadow-sm",
+                  lesson.status === "completed" ? "bg-green-500 text-white" : 
+                  lesson.status === "available" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
                 )}>
-                  {lesson.difficulty}
+                  {lesson.status === "completed" ? <CheckCircle className="h-7 w-7" /> : idx + 1}
                 </div>
-                <GraduationCap className={cn(
-                  "h-5 w-5",
-                  selectedLesson?.id === lesson.id ? "text-orange-500" : "text-slate-300 group-hover:text-orange-500 transition-colors"
-                )} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{lesson.title}</h3>
-              <p className={cn(
-                "text-sm line-clamp-2",
-                selectedLesson?.id === lesson.id ? "text-slate-400" : "text-slate-500"
-              )}>
-                {lesson.description}
-              </p>
-              <div className={cn(
-                "mt-4 flex items-center text-sm font-semibold transition-colors",
-                selectedLesson?.id === lesson.id ? "text-orange-500" : "text-slate-400 group-hover:text-slate-900"
-              )}>
-                Start Lesson <ArrowRight className="ml-2 h-4 w-4" />
-              </div>
-            </button>
-          ))}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
+                      {lesson.level}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-900">{lesson.title}</h4>
+                  <p className="text-xs text-slate-400 font-medium">{lesson.topic}</p>
+                </div>
+                {lesson.status === "locked" ? <Lock className="h-5 w-5 text-slate-300" /> : <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-orange-500 transition-colors" />}
+              </motion.button>
+            ))}
+          </div>
         </div>
 
-        <div className="relative">
-          {selectedLesson ? (
-            <motion.div
-              key={selectedLesson.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden sticky top-8"
-            >
-              <div className="bg-slate-900 p-8 text-white">
-                <h3 className="text-2xl font-bold mb-2">{selectedLesson.title}</h3>
-                <p className="text-slate-400">{selectedLesson.description}</p>
-              </div>
-              
-              <div className="p-8 space-y-8">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-widest">Master Example</h4>
-                  <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 group relative">
-                    <p className="text-xl font-bold text-slate-900 leading-relaxed pr-10">
-                      {selectedLesson.example}
-                    </p>
-                    <button 
-                      onClick={() => speak(selectedLesson.example)}
-                      className="absolute right-6 top-6 p-2 bg-white rounded-full shadow-sm hover:scale-110 transition-transform"
-                    >
-                      <Volume2 className="h-5 w-5 text-orange-500" />
-                    </button>
-                    <div className="mt-4 flex items-start gap-3 text-sm text-slate-600 italic">
-                      <div className="mt-1 p-0.5 bg-orange-200 rounded-full">
-                        <CheckCircle2 className="h-3 w-3 text-orange-700" />
+        {/* Lesson View */}
+        <div className="lg:col-span-7">
+          <AnimatePresence mode="wait">
+            {selectedLesson ? (
+              <motion.div
+                key={selectedLesson.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-10 min-h-[600px] flex flex-col"
+              >
+                {!showQuiz ? (
+                  <>
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="p-4 bg-orange-50 rounded-2xl">
+                        <BookOpen className="h-10 w-10 text-orange-500" />
                       </div>
-                      {selectedLesson.explanation}
+                      <span className="text-sm font-bold text-slate-400">LES-MODULE: {selectedLesson.id.toUpperCase()}</span>
                     </div>
+
+                    <h3 className="text-3xl font-black text-slate-900 mb-4">{selectedLesson.title}</h3>
+                    <p className="text-slate-500 text-lg leading-relaxed mb-8">
+                      {selectedLesson.description}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-6 mb-10">
+                      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Grammatica Focus</h5>
+                        <ul className="space-y-2">
+                          {selectedLesson.grammarFocus.map(f => (
+                            <li key={f} className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                              <div className="h-1.5 w-1.5 bg-orange-500 rounded-full" /> {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Woordenschat</h5>
+                        <p className="text-sm font-bold text-slate-700">{selectedLesson.vocabularyCategory}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-10 border-t border-slate-100">
+                      <button
+                        onClick={() => setShowQuiz(true)}
+                        disabled={isGeneratingQuiz || quizQuestions.length === 0}
+                        className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-xl flex items-center justify-center gap-3 hover:bg-orange-500 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 group"
+                      >
+                        {isGeneratingQuiz ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                          <>
+                            Start Hoofdstuk Quiz <Play className="h-6 w-6 fill-current" />
+                          </>
+                        )}
+                      </button>
+                      <p className="text-center text-[10px] text-slate-400 mt-4 font-bold uppercase tracking-widest">
+                        Score minimaal 3/5 om het volgende hoofdstuk te ontgrendelen
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <button 
+                      onClick={() => setShowQuiz(false)}
+                      className="flex items-center gap-2 text-slate-400 font-bold text-sm mb-8 hover:text-slate-900 transition-colors"
+                    >
+                      <Undo2 className="h-4 w-4" /> Stop Quiz
+                    </button>
+                    <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
                   </div>
+                )}
+              </motion.div>
+            ) : (
+              <div className="h-full min-h-[600px] bg-slate-50 rounded-[2.5rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center">
+                <div className="p-8 bg-white rounded-full shadow-inner mb-6">
+                  <GraduationCap className="h-20 w-20 text-slate-200" />
                 </div>
-
-                <div>
-                  <h4 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-widest">Key takeaways</h4>
-                  <ul className="space-y-4">
-                    <li className="flex items-start gap-4">
-                      <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-500">1</div>
-                      <p className="text-slate-700">Practice identifying the {selectedLesson.id === 'subclauses' ? 'conjunction' : 'subject'} first.</p>
-                    </li>
-                    <li className="flex items-start gap-4">
-                      <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-500">2</div>
-                      <p className="text-slate-700">Listen for these patterns in the Chat Tutor sessions.</p>
-                    </li>
-                  </ul>
-                </div>
-
-                <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
-                  Mark as Completed
-                </button>
+                <h3 className="text-2xl font-black text-slate-300">Selecteer een hoofdstuk</h3>
+                <p className="text-slate-400 mt-2 max-w-xs font-medium">
+                  Begin je gestructureerde reis naar B1+ met de Coutinho-methode.
+                </p>
               </div>
-            </motion.div>
-          ) : (
-            <div className="h-full min-h-[500px] bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center">
-              <GraduationCap className="h-16 w-16 text-slate-200 mb-4" />
-              <h3 className="text-xl font-bold text-slate-400">Select a grammar topic</h3>
-              <p className="text-slate-400 mt-2 max-w-xs">
-                Dive deep into the rules that will make your Dutch sound perfect at a B1 level.
-              </p>
-            </div>
-          )}
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
