@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Lesson } from "@/lib/curriculum";
 import { 
-  BookOpen, 
   Lock, 
-  CheckCircle, 
   Play, 
   GraduationCap, 
-  ChevronRight,
   Loader2,
   Undo2,
   Clock,
-  MessageSquare,
-  ClipboardCheck,
-  Lightbulb
+  Briefcase,
+  Users,
+  Palmtree,
+  Star,
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -23,6 +22,22 @@ import { useProgress } from "@/lib/ProgressContext";
 
 type MasterclassStep = "overview" | "vocab" | "grammar" | "speaking" | "quiz";
 
+const BRANCH_ICONS = {
+  core: Zap,
+  professional: Briefcase,
+  social: Users,
+  culture: Palmtree,
+  mastery: Star
+};
+
+const BRANCH_COLORS = {
+  core: "bg-orange-500",
+  professional: "bg-blue-500",
+  social: "bg-green-500",
+  culture: "bg-purple-500",
+  mastery: "bg-amber-500"
+};
+
 export default function MasterclassPage() {
   const { curriculum, completeLesson, stats } = useProgress();
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -30,7 +45,7 @@ export default function MasterclassPage() {
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const startLesson = async (lesson: Lesson) => {
+  const startLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
     setCurrentStep("overview");
   };
@@ -40,7 +55,6 @@ export default function MasterclassPage() {
     setIsGenerating(true);
     setCurrentStep(step);
     
-    // If it's the quiz, we need to fetch questions
     if (step === "quiz") {
       try {
         const response = await fetch("/api/quiz", {
@@ -70,235 +84,209 @@ export default function MasterclassPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
+    <div className="max-w-7xl mx-auto pb-20 px-4">
       <div className="mb-12 flex justify-between items-center">
         <div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-900">30-Dag Masterclass</h2>
-          <p className="mt-2 text-slate-500 text-lg font-medium">B1 Nederlands in 1 uur per dag</p>
+          <h2 className="text-4xl font-black tracking-tight text-slate-900">RealTree Learning</h2>
+          <p className="mt-2 text-slate-500 text-lg font-medium">Kies je eigen weg naar B1 meesterschap.</p>
         </div>
         <div className="hidden md:flex items-center gap-4 bg-white p-4 rounded-3xl border-2 border-slate-100 shadow-sm">
           <Clock className="text-orange-500" />
           <div>
-            <div className="text-[10px] font-black uppercase text-slate-400">Dag Totaal</div>
-            <div className="text-sm font-bold text-slate-900">60 Minuten</div>
+            <div className="text-[10px] font-black uppercase text-slate-400">Totale Voortgang</div>
+            <div className="text-sm font-bold text-slate-900">{stats.completionPercentage}% Voltooid</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* Left: The Roadmap */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-slate-900 p-8 rounded-[2rem] text-white relative overflow-hidden shadow-2xl shadow-slate-200">
-            <h3 className="text-xl font-bold mb-2">Masterclass Voortgang</h3>
-            <div className="text-5xl font-black text-orange-500">{stats.completionPercentage}%</div>
-            <p className="text-slate-400 text-xs mt-2 font-bold uppercase tracking-widest">Dag {stats.activeStreak || 1} van de 30</p>
-            <div className="mt-6 h-3 w-full bg-slate-800 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${stats.completionPercentage}%` }}
-                className="h-full bg-orange-500 rounded-full" 
-              />
-            </div>
-          </div>
+      <div className="relative min-h-[800px] bg-slate-50 rounded-[3rem] p-12 border-4 border-slate-100 overflow-hidden">
+        {/* The Grid/Tree Layout */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
+          
+          {["professional", "social", "culture"].map((branchName) => (
+            <div key={branchName} className="space-y-8">
+              <div className="flex items-center gap-3 mb-8">
+                <div className={cn("p-3 rounded-2xl text-white", BRANCH_COLORS[branchName as keyof typeof BRANCH_COLORS])}>
+                  {(() => {
+                    const Icon = BRANCH_ICONS[branchName as keyof typeof BRANCH_ICONS];
+                    return <Icon className="h-6 w-6" />;
+                  })()}
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 capitalize">{branchName} Path</h3>
+              </div>
 
-          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-            {curriculum.map((lesson) => (
-              <button
-                key={lesson.id}
-                onClick={() => lesson.status !== "locked" && startLesson(lesson)}
-                className={cn(
-                  "w-full flex items-center gap-4 p-5 rounded-[1.5rem] border-2 transition-all text-left group",
-                  selectedLesson?.id === lesson.id 
-                    ? "border-orange-500 bg-orange-50 shadow-md" 
-                    : "border-slate-100 bg-white hover:border-slate-300",
-                  lesson.status === "locked" && "opacity-40 grayscale cursor-not-allowed"
-                )}
-              >
-                <div className={cn(
-                  "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-black",
-                  lesson.status === "completed" ? "bg-green-500 text-white" : 
-                  lesson.status === "available" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
-                )}>
-                  {lesson.day}
+              {/* Core Foundation (Shared) */}
+              {branchName === "social" && (
+                <div className="flex flex-col items-center space-y-8 mb-16">
+                  {curriculum.filter(l => l.branch === "core").map((lesson) => (
+                    <LessonNode key={lesson.id} lesson={lesson} onClick={() => startLesson(lesson)} />
+                  ))}
+                  <div className="h-12 w-1 bg-slate-200 rounded-full" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{lesson.title}</h4>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">{lesson.topic}</p>
-                </div>
-                {lesson.status === "locked" ? <Lock className="h-4 w-4 text-slate-300" /> : <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-orange-500" />}
-              </button>
+              )}
+
+              {/* Branch Specific Lessons */}
+              <div className="flex flex-col items-center space-y-8">
+                {curriculum.filter(l => l.branch === branchName).map((lesson) => (
+                  <LessonNode key={lesson.id} lesson={lesson} onClick={() => startLesson(lesson)} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Final Mastery Section */}
+        <div className="mt-24 flex flex-col items-center">
+          <div className="h-16 w-1 bg-gradient-to-b from-slate-200 to-amber-500 rounded-full mb-8" />
+          <div className="flex items-center gap-8">
+            {curriculum.filter(l => l.branch === "mastery").map((lesson) => (
+              <LessonNode key={lesson.id} lesson={lesson} onClick={() => startLesson(lesson)} />
             ))}
           </div>
         </div>
 
-        {/* Right: The Active Module */}
-        <div className="lg:col-span-8">
-          <AnimatePresence mode="wait">
-            {selectedLesson ? (
-              <motion.div
-                key={selectedLesson.id + currentStep}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-2xl p-10 min-h-[700px] flex flex-col"
+        {/* Decorative background lines could go here using absolute positioning */}
+      </div>
+
+      {/* Lesson Overlay */}
+      <AnimatePresence>
+        {selectedLesson && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-10 relative"
+            >
+              <button 
+                onClick={() => setSelectedLesson(null)}
+                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full transition-colors"
               >
-                {/* Header for Active Lesson */}
-                <div className="flex items-center justify-between mb-10 pb-8 border-b-2 border-slate-50">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-orange-100 rounded-2xl">
-                      <GraduationCap className="h-8 w-8 text-orange-600" />
+                <Undo2 className="h-6 w-6 text-slate-400" />
+              </button>
+
+              <div className="flex-1">
+                {currentStep === "overview" && (
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-6 mb-10">
+                      <div className={cn("p-5 rounded-3xl text-white shadow-xl", BRANCH_COLORS[selectedLesson.branch])}>
+                        {(() => {
+                          const Icon = BRANCH_ICONS[selectedLesson.branch];
+                          return <Icon className="h-10 w-10" />;
+                        })()}
+                      </div>
+                      <div>
+                        <h3 className="text-4xl font-black text-slate-900">{selectedLesson.title}</h3>
+                        <p className="text-xl font-bold text-slate-400">{selectedLesson.topic}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-slate-900">{selectedLesson.title}</h3>
-                      <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{selectedLesson.topic}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setSelectedLesson(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
-                    <Undo2 className="h-6 w-6 text-slate-300" />
-                  </button>
-                </div>
 
-                {/* Step Content */}
-                <div className="flex-1">
-                  {currentStep === "overview" && (
-                    <div className="space-y-8">
-                      <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-slate-100">
-                        <h4 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
-                          <Lightbulb className="text-orange-500" /> Dagoverzicht
-                        </h4>
-                        <p className="text-slate-700 leading-relaxed font-medium text-lg">
-                          {selectedLesson.description}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl">
-                          <BookOpen className="text-blue-500 mb-3" />
-                          <h5 className="font-black text-slate-900 text-sm">Vocabulaire</h5>
-                          <p className="text-xs text-slate-400 mt-1">15 Minuten</p>
-                        </div>
-                        <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl">
-                          <ClipboardCheck className="text-purple-500 mb-3" />
-                          <h5 className="font-black text-slate-900 text-sm">Grammatica</h5>
-                          <p className="text-xs text-slate-400 mt-1">20 Minuten</p>
-                        </div>
-                        <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl">
-                          <MessageSquare className="text-green-500 mb-3" />
-                          <h5 className="font-black text-slate-900 text-sm">Spreken</h5>
-                          <p className="text-xs text-slate-400 mt-1">25 Minuten</p>
-                        </div>
-                      </div>
-
-                      <button 
-                        onClick={() => generateStepContent("vocab")}
-                        className="w-full py-6 bg-slate-900 text-white rounded-3xl font-black text-xl hover:bg-orange-500 transition-all shadow-xl shadow-slate-200 mt-8"
-                      >
-                        Start 60-Minuten Sessie
-                      </button>
-                    </div>
-                  )}
-
-                  {currentStep === "vocab" && (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">Stap 1: Woordenschat</span>
-                        <span className="text-xs font-bold text-slate-400">15m resterend</span>
-                      </div>
-                      <h4 className="text-3xl font-black text-slate-900">Belangrijke woorden voor vandaag</h4>
-                      <p className="text-slate-500 font-medium leading-relaxed">Focus op: {selectedLesson.vocabularyCategory}</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                        {/* Placeholder for dynamic vocab cards */}
-                        {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="p-6 border-2 border-slate-100 rounded-3xl bg-slate-50 animate-pulse h-24" />
-                        ))}
-                      </div>
-
-                      <button 
-                        onClick={() => generateStepContent("grammar")}
-                        className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-lg mt-10"
-                      >
-                        Volgende: Grammatica Deep-Dive
-                      </button>
-                    </div>
-                  )}
-
-                  {currentStep === "grammar" && (
-                    <div className="space-y-6">
-                       <div className="flex items-center justify-between mb-4">
-                        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-[10px] font-black uppercase">Stap 2: Grammatica</span>
-                        <span className="text-xs font-bold text-slate-400">40m resterend</span>
-                      </div>
-                      <h4 className="text-3xl font-black text-slate-900">De Regels Beheersen</h4>
-                      <div className="space-y-4 mt-8">
-                        {selectedLesson.grammarFocus.map(rule => (
-                          <div key={rule} className="p-8 bg-slate-900 text-white rounded-[2rem] shadow-xl">
-                            <h5 className="text-orange-500 font-black text-lg mb-2">{rule}</h5>
-                            <p className="text-slate-400 font-medium">Laten we kijken hoe we dit gebruiken in Hoofdstuk {selectedLesson.day}.</p>
-                          </div>
-                        ))}
-                      </div>
-                      <button 
-                        onClick={() => generateStepContent("speaking")}
-                        className="w-full py-5 bg-purple-600 text-white rounded-3xl font-black text-lg mt-10"
-                      >
-                        Volgende: Spreken met Lars
-                      </button>
-                    </div>
-                  )}
-
-                  {currentStep === "speaking" && (
-                    <div className="space-y-8 text-center py-10">
-                      <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <MessageSquare className="h-10 w-10 text-orange-600" />
-                      </div>
-                      <h4 className="text-3xl font-black text-slate-900">Tijd om te praten!</h4>
-                      <p className="text-slate-500 text-lg max-w-md mx-auto font-medium">
-                        Ga naar de Chat en praat 25 minuten over <span className="text-slate-900 font-black">"{selectedLesson.topic}"</span>.
+                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100">
+                      <p className="text-slate-700 leading-relaxed font-medium text-xl">
+                        {selectedLesson.description}
                       </p>
-                      <div className="p-8 bg-orange-50 rounded-[2rem] border-2 border-orange-100 text-left">
-                        <h5 className="text-xs font-black uppercase text-orange-600 mb-2 tracking-widest">Spreken Focus</h5>
-                        <p className="text-slate-900 font-bold">Gebruik vandaag: {selectedLesson.grammarFocus.join(", ")}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl">
+                        <h5 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-2">Grammatica Focus</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedLesson.grammarFocus.map(f => (
+                            <span key={f} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-black">{f}</span>
+                          ))}
+                        </div>
                       </div>
+                      <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl">
+                        <h5 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-2">Woordenschat</h5>
+                        <p className="font-bold text-slate-700">{selectedLesson.vocabularyCategory}</p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => generateStepContent("vocab")}
+                      className={cn(
+                        "w-full py-6 text-white rounded-[2rem] font-black text-2xl transition-all shadow-xl mt-8 active:scale-95",
+                        BRANCH_COLORS[selectedLesson.branch]
+                      )}
+                    >
+                      Start Lesson
+                    </button>
+                  </div>
+                )}
+
+                {currentStep === "quiz" && (
+                  <div>
+                    {isGenerating ? (
+                      <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
+                        <p className="font-black text-slate-400 uppercase tracking-widest text-xs text-center">AI bereidt je examen voor...</p>
+                      </div>
+                    ) : (
+                      <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
+                    )}
+                  </div>
+                )}
+
+                {/* Simplified step logic for the demo - normally goes through vocab/grammar/etc */}
+                {(currentStep !== "overview" && currentStep !== "quiz") && (
+                   <div className="py-20 text-center">
+                      <Loader2 className="h-12 w-12 text-orange-500 animate-spin mx-auto mb-4" />
+                      <h4 className="text-2xl font-black text-slate-900">Module laden...</h4>
                       <button 
                         onClick={() => generateStepContent("quiz")}
-                        className="w-full py-5 bg-orange-500 text-white rounded-3xl font-black text-lg shadow-xl shadow-orange-200 mt-10"
+                        className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold"
                       >
-                        Ik heb geoefend, start de Eindquiz
+                        Skip to Quiz (Debug)
                       </button>
-                    </div>
-                  )}
-
-                  {currentStep === "quiz" && (
-                    <div>
-                      {isGenerating ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4">
-                          <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
-                          <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Examen wordt voorbereid...</p>
-                        </div>
-                      ) : (
-                        <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ) : (
-              /* Selection Screen */
-              <div className="h-full min-h-[700px] bg-slate-50 rounded-[3rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center">
-                <div className="p-10 bg-white rounded-full shadow-2xl mb-8 relative">
-                   <div className="absolute inset-0 bg-orange-500 rounded-full animate-ping opacity-10"></div>
-                  <Play className="h-20 w-20 text-orange-500 fill-current relative z-10" />
-                </div>
-                <h3 className="text-3xl font-black text-slate-900">Klaar voor vandaag?</h3>
-                <p className="text-slate-500 mt-4 max-w-sm text-lg font-medium">
-                  Selecteer je volgende dag in de roadmap om je 1-uur sessie te beginnen.
-                </p>
+                   </div>
+                )}
               </div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function LessonNode({ lesson, onClick }: { lesson: Lesson, onClick: () => void }) {
+  const isLocked = lesson.status === "locked";
+  const isCompleted = lesson.status === "completed";
+  const Icon = BRANCH_ICONS[lesson.branch];
+
+  return (
+    <motion.button
+      whileHover={!isLocked ? { scale: 1.05, y: -5 } : {}}
+      whileTap={!isLocked ? { scale: 0.95 } : {}}
+      onClick={() => !isLocked && onClick()}
+      className={cn(
+        "relative w-48 p-6 rounded-[2rem] border-4 transition-all flex flex-col items-center text-center",
+        isLocked 
+          ? "bg-slate-100 border-slate-200 opacity-60 grayscale cursor-not-allowed" 
+          : isCompleted
+            ? "bg-white border-green-500 shadow-xl shadow-green-100"
+            : "bg-white border-slate-900 shadow-2xl shadow-slate-200"
+      )}
+    >
+      <div className={cn(
+        "p-4 rounded-2xl mb-4 text-white",
+        isLocked ? "bg-slate-300" : isCompleted ? "bg-green-500" : BRANCH_COLORS[lesson.branch]
+      )}>
+        {isLocked ? <Lock className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+      </div>
+      <h4 className="font-black text-slate-900 text-sm leading-tight mb-1">{lesson.title}</h4>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{lesson.topic}</p>
+      
+      {isCompleted && (
+        <div className="absolute -top-3 -right-3 bg-green-500 text-white p-1.5 rounded-full shadow-lg">
+          <Play className="h-3 w-3 fill-current" />
+        </div>
+      )}
+    </motion.button>
   );
 }

@@ -57,9 +57,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(saved);
         
+        // Migration Mapping: Map old linear IDs to new branching IDs
+        const idMigration: Record<string, string> = {
+          "d1": "core-1",
+          "d2": "core-2",
+          "d3": "soc-1", // Approximate mapping
+          "d4": "soc-2",
+          "d5": "soc-3",
+          // ... more can be added if needed
+        };
+
+        const migratedCompleted = (parsed.completedLessons || []).map((id: string) => idMigration[id] || id);
+        
         // Robust hydration with fallbacks for every field
         const hydratedProgress: UserProgress = {
-          completedLessons: Array.isArray(parsed.completedLessons) ? parsed.completedLessons : [],
+          completedLessons: Array.from(new Set(migratedCompleted)) as string[],
           masteredWords: Array.isArray(parsed.masteredWords) ? parsed.masteredWords : [],
           streak: typeof parsed.streak === 'number' ? parsed.streak : 0,
           lastActive: parsed.lastActive || null,
@@ -72,14 +84,23 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         setProgress(hydratedProgress);
         
         // Update curriculum status based on saved progress
-        setCurriculum(prev => prev.map((lesson, idx) => {
+        setCurriculum(prev => prev.map((lesson) => {
           const isCompleted = hydratedProgress.completedLessons.includes(lesson.id);
-          // A lesson is available if it's completed OR if the previous one is completed
-          const isPreviousCompleted = idx === 0 || hydratedProgress.completedLessons.includes(prev[idx-1].id);
+          
+          let isAvailable = isCompleted;
+          if (!isAvailable) {
+            if (!lesson.prerequisites || lesson.prerequisites.length === 0) {
+              isAvailable = true;
+            } else {
+              isAvailable = lesson.prerequisites.every(pId => 
+                hydratedProgress.completedLessons.includes(pId)
+              );
+            }
+          }
           
           return {
             ...lesson,
-            status: isCompleted ? "completed" : (isPreviousCompleted ? "available" : "locked")
+            status: isCompleted ? "completed" : (isAvailable ? "available" : "locked")
           };
         }));
       } catch (e) {
@@ -93,13 +114,31 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("dutch_master_progress", JSON.stringify(progress));
   }, [progress]);
 
+  // Re-sync curriculum whenever progress changes to ensure UI stays in sync with branches
+  useEffect(() => {
+    setCurriculum(prev => prev.map(lesson => {
+      const isCompleted = progress.completedLessons.includes(lesson.id);
+      let isAvailable = isCompleted;
+      if (!isAvailable) {
+        if (!lesson.prerequisites || lesson.prerequisites.length === 0) {
+          isAvailable = true;
+        } else {
+          isAvailable = lesson.prerequisites.every(pId => progress.completedLessons.includes(pId));
+        }
+      }
+      return {
+        ...lesson,
+        status: isCompleted ? "completed" : (isAvailable ? "available" : "locked")
+      };
+    }));
+  }, [progress.completedLessons]);
+
   const completeLesson = (id: string) => {
     setProgress(prev => {
       if (prev.completedLessons.includes(id)) return prev;
       
       const newCompleted = [...prev.completedLessons, id];
       
-      // Update streak logic
       const today = new Date().toISOString().split('T')[0];
       let newStreak = prev.streak;
       if (prev.lastActive !== today) {
@@ -112,18 +151,6 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         lastActive: today,
         streak: newStreak
       };
-    });
-
-    // Update curriculum availability immediately
-    setCurriculum(prev => {
-      const next = prev.map(l => l.id === id ? { ...l, status: "completed" as const } : l);
-      const completedIdx = next.findIndex(l => l.id === id);
-      if (completedIdx !== -1 && completedIdx + 1 < next.length) {
-        if (next[completedIdx + 1].status === "locked") {
-          next[completedIdx + 1].status = "available";
-        }
-      }
-      return next;
     });
   };
 
