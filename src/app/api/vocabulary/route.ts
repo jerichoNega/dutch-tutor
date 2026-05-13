@@ -14,12 +14,19 @@ export async function POST(req: Request) {
         "Format your response as a JSON array of objects, like this: [{\"dutch\": \"...\", \"english\": \"...\"}, ...]"
     });
 
-    const result = await model.generateContent(`Generate 3 example sentences for the Dutch word: ${word}`);
+    const result = await model.generateContent(`Generate 3 example sentences for the Dutch word: ${word}. Return ONLY the JSON array.`);
     const response = await result.response;
     const text = response.text();
     
-    // Clean JSON if needed (sometimes Gemini adds ```json ... ```)
-    const jsonStr = text.replace(/```json|```/g, "").trim();
+    // Improved cleaning: find the first [ and last ] to extract JSON
+    const startIdx = text.indexOf("[");
+    const endIdx = text.lastIndexOf("]");
+    
+    if (startIdx === -1 || endIdx === -1) {
+      throw new Error("Invalid AI response format");
+    }
+
+    const jsonStr = text.substring(startIdx, endIdx + 1);
     const examples = JSON.parse(jsonStr);
 
     return NextResponse.json({ examples });

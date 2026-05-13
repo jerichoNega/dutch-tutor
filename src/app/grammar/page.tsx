@@ -219,74 +219,79 @@ export default function MasterclassPage() {
                   </div>
                 )}
 
-                {currentStep === "quiz" && (
-                  <div>
-                    {isGenerating ? (
-                      <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
-                        <p className="font-black text-slate-400 uppercase tracking-widest text-xs text-center">AI bereidt je examen voor...</p>
+                  {currentStep === "vocab" && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">Stap 1: Woordenschat</span>
+                        <span className="text-xs font-bold text-slate-400">15m</span>
                       </div>
-                    ) : (
-                      <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
-                    )}
-                  </div>
-                )}
+                      <h4 className="text-3xl font-black text-slate-900">Belangrijke woorden voor vandaag</h4>
+                      <p className="text-slate-500 font-medium leading-relaxed">Focus op: {selectedLesson.vocabularyCategory}</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                        <div className="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                          <h5 className="font-black text-slate-900 mb-2">Kernwoorden</h5>
+                          <p className="text-slate-600">Je leert vandaag 10 woorden gerelateerd aan {selectedLesson.topic}.</p>
+                        </div>
+                        <div className="p-8 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                          <h5 className="font-black text-slate-900 mb-2">Context</h5>
+                          <p className="text-slate-600">Focus op het gebruik van deze woorden in een {selectedLesson.branch} context.</p>
+                        </div>
+                      </div>
 
-                {/* Simplified step logic for the demo - normally goes through vocab/grammar/etc */}
-                {(currentStep !== "overview" && currentStep !== "quiz") && (
-                   <div className="py-20 text-center">
-                      <Loader2 className="h-12 w-12 text-orange-500 animate-spin mx-auto mb-4" />
-                      <h4 className="text-2xl font-black text-slate-900">Module laden...</h4>
+                      <button 
+                        onClick={() => generateStepContent("grammar")}
+                        className={cn("w-full py-5 text-white rounded-3xl font-black text-lg mt-10", BRANCH_COLORS[selectedLesson.branch])}
+                      >
+                        Volgende: Grammatica Deep-Dive
+                      </button>
+                    </div>
+                  )}
+
+                  {currentStep === "grammar" && (
+                    <div className="space-y-6">
+                       <div className="flex items-center justify-between mb-4">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-[10px] font-black uppercase">Stap 2: Grammatica</span>
+                        <span className="text-xs font-bold text-slate-400">20m</span>
+                      </div>
+                      <h4 className="text-3xl font-black text-slate-900">De Regels Beheersen</h4>
+                      <div className="space-y-4 mt-8">
+                        {selectedLesson.grammarFocus.map(rule => (
+                          <div key={rule} className="p-8 bg-slate-900 text-white rounded-[2rem] shadow-xl">
+                            <h5 className="text-orange-500 font-black text-lg mb-2">{rule}</h5>
+                            <p className="text-slate-400 font-medium italic">"{rule}" is essentieel voor je voortgang in {selectedLesson.topic}.</p>
+                          </div>
+                        ))}
+                      </div>
+                      <button 
+                        onClick={() => generateStepContent("speaking")}
+                        className={cn("w-full py-5 text-white rounded-3xl font-black text-lg mt-10", BRANCH_COLORS[selectedLesson.branch])}
+                      >
+                        Volgende: Spreken met Lars
+                      </button>
+                    </div>
+                  )}
+
+                  {currentStep === "speaking" && (
+                    <div className="space-y-8 text-center py-10">
+                      <div className={cn("w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 opacity-20", BRANCH_COLORS[selectedLesson.branch])}>
+                        <Zap className="h-10 w-10 text-white" />
+                      </div>
+                      <h4 className="text-3xl font-black text-slate-900">Tijd om te praten!</h4>
+                      <p className="text-slate-500 text-lg max-w-md mx-auto font-medium">
+                        Ga naar de Chat en praat 25 minuten over <span className="text-slate-900 font-black">"{selectedLesson.topic}"</span>.
+                      </p>
+                      <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-slate-100 text-left">
+                        <h5 className="text-xs font-black uppercase text-slate-400 mb-2 tracking-widest">Spreken Focus</h5>
+                        <p className="text-slate-900 font-bold">Gebruik vandaag: {selectedLesson.grammarFocus.join(", ")}</p>
+                      </div>
                       <button 
                         onClick={() => generateStepContent("quiz")}
-                        className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold"
+                        className={cn("w-full py-5 text-white rounded-3xl font-black text-lg mt-10 shadow-xl", BRANCH_COLORS[selectedLesson.branch])}
                       >
-                        Skip to Quiz (Debug)
+                        Ik heb geoefend, start de Eindquiz
                       </button>
-                   </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+                    </div>
+                  )}
 
-function LessonNode({ lesson, onClick }: { lesson: Lesson, onClick: () => void }) {
-  const isLocked = lesson.status === "locked";
-  const isCompleted = lesson.status === "completed";
-  const Icon = BRANCH_ICONS[lesson.branch];
-
-  return (
-    <motion.button
-      whileHover={!isLocked ? { scale: 1.05, y: -5 } : {}}
-      whileTap={!isLocked ? { scale: 0.95 } : {}}
-      onClick={() => !isLocked && onClick()}
-      className={cn(
-        "relative w-48 p-6 rounded-[2rem] border-4 transition-all flex flex-col items-center text-center",
-        isLocked 
-          ? "bg-slate-100 border-slate-200 opacity-60 grayscale cursor-not-allowed" 
-          : isCompleted
-            ? "bg-white border-green-500 shadow-xl shadow-green-100"
-            : "bg-white border-slate-900 shadow-2xl shadow-slate-200"
-      )}
-    >
-      <div className={cn(
-        "p-4 rounded-2xl mb-4 text-white",
-        isLocked ? "bg-slate-300" : isCompleted ? "bg-green-500" : BRANCH_COLORS[lesson.branch]
-      )}>
-        {isLocked ? <Lock className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
-      </div>
-      <h4 className="font-black text-slate-900 text-sm leading-tight mb-1">{lesson.title}</h4>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{lesson.topic}</p>
-      
-      {isCompleted && (
-        <div className="absolute -top-3 -right-3 bg-green-500 text-white p-1.5 rounded-full shadow-lg">
-          <Play className="h-3 w-3 fill-current" />
-        </div>
-      )}
-    </motion.button>
-  );
-}
+                  {currentStep === "quiz" && (
