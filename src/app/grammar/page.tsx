@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COUTINHO_CURRICULUM, Lesson } from "@/lib/curriculum";
+import { Lesson } from "@/lib/curriculum";
 import { 
   BookOpen, 
   Lock, 
@@ -15,9 +15,10 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Quiz } from "@/components/Quiz";
+import { useProgress } from "@/lib/ProgressContext";
 
 export default function GrammarPage() {
-  const [curriculum, setCurriculum] = useState<Lesson[]>(COUTINHO_CURRICULUM);
+  const { curriculum, completeLesson, stats } = useProgress();
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -48,17 +49,8 @@ export default function GrammarPage() {
   };
 
   const handleQuizComplete = (score: number) => {
-    // Unlock next lesson if score is good enough (e.g., > 3/5)
-    if (score >= 3) {
-      setCurriculum(prev => {
-        const idx = prev.findIndex(l => l.id === selectedLesson?.id);
-        const next = [...prev];
-        next[idx].status = "completed";
-        if (idx + 1 < next.length) {
-          next[idx + 1].status = "available";
-        }
-        return next;
-      });
+    if (score >= 3 && selectedLesson) {
+      completeLesson(selectedLesson.id);
     }
     setShowQuiz(false);
     setQuizQuestions([]);
@@ -76,10 +68,10 @@ export default function GrammarPage() {
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-slate-900 p-8 rounded-3xl text-white relative overflow-hidden">
             <h3 className="text-xl font-bold mb-2">Jouw Voortgang</h3>
-            <div className="text-4xl font-black text-orange-500">25%</div>
-            <p className="text-slate-400 text-sm mt-1">Nog 3 hoofdstukken tot B1+</p>
+            <div className="text-4xl font-black text-orange-500">{stats.completionPercentage}%</div>
+            <p className="text-slate-400 text-sm mt-1">Gerealiseerd op basis van voltooide quizen</p>
             <div className="mt-6 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-orange-500 w-1/4 rounded-full" />
+              <div className="h-full bg-orange-500 rounded-full" style={{ width: `${stats.completionPercentage}%` }} />
             </div>
             <GraduationCap className="absolute -right-4 -bottom-4 h-32 w-32 text-slate-800 rotate-12" />
           </div>
@@ -142,24 +134,24 @@ export default function GrammarPage() {
                     </div>
 
                     <h3 className="text-3xl font-black text-slate-900 mb-4">{selectedLesson.title}</h3>
-                    <p className="text-slate-500 text-lg leading-relaxed mb-8">
+                    <p className="text-slate-800 text-lg leading-relaxed mb-8 font-medium">
                       {selectedLesson.description}
                     </p>
 
                     <div className="grid grid-cols-2 gap-6 mb-10">
-                      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Grammatica Focus</h5>
+                      <div className="p-6 bg-slate-100 rounded-3xl border-2 border-slate-200">
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Grammatica Focus</h5>
                         <ul className="space-y-2">
                           {selectedLesson.grammarFocus.map(f => (
-                            <li key={f} className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                              <div className="h-1.5 w-1.5 bg-orange-500 rounded-full" /> {f}
+                            <li key={f} className="flex items-center gap-2 text-sm font-black text-slate-900">
+                              <div className="h-1.5 w-1.5 bg-orange-600 rounded-full" /> {f}
                             </li>
                           ))}
                         </ul>
                       </div>
-                      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Woordenschat</h5>
-                        <p className="text-sm font-bold text-slate-700">{selectedLesson.vocabularyCategory}</p>
+                      <div className="p-6 bg-slate-100 rounded-3xl border-2 border-slate-200">
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Woordenschat</h5>
+                        <p className="text-sm font-black text-slate-900">{selectedLesson.vocabularyCategory}</p>
                       </div>
                     </div>
 

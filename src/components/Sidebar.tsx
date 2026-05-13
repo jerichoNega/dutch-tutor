@@ -28,7 +28,7 @@ export function Sidebar() {
           Dutch<span className="text-white">Master</span>
         </h1>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-6">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -36,15 +36,15 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "group flex items-center rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200",
                 isActive 
-                  ? "bg-slate-800 text-orange-500" 
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-900/20" 
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
               )}
             >
               <item.icon className={cn(
-                "mr-3 h-5 w-5 flex-shrink-0",
-                isActive ? "text-orange-500" : "text-slate-400 group-hover:text-white"
+                "mr-3 h-5 w-5 flex-shrink-0 transition-colors",
+                isActive ? "text-white" : "text-slate-500 group-hover:text-white"
               )} />
               {item.name}
             </Link>

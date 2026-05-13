@@ -5,8 +5,10 @@ import { B1_VOCABULARY } from "@/lib/vocabulary";
 import { Book, Search, ChevronRight, Loader2, Volume2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useProgress } from "@/lib/ProgressContext";
 
 export default function VocabularyPage() {
+  const { addMasteredWord } = useProgress();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedWord, setSelectedWord] = useState<any>(null);
   const [examples, setExamples] = useState<any[]>([]);
@@ -40,6 +42,7 @@ export default function VocabularyPage() {
   const handleWordClick = (item: any) => {
     setSelectedWord(item);
     fetchExamples(item.word);
+    addMasteredWord(item.word);
   };
 
   const speak = (text: string) => {

@@ -78,15 +78,15 @@ export function Quiz({ questions, onComplete }: QuizProps) {
         </div>
       </div>
 
-      <h3 className="text-2xl font-bold text-slate-900">{q.question}</h3>
+      <h3 className="text-2xl font-black text-slate-900 leading-tight">{q.question}</h3>
 
       <div className="grid grid-cols-1 gap-4">
         {q.options.map((option, idx) => {
-          let style = "border-slate-200 bg-white hover:border-orange-500";
+          let style = "border-slate-300 bg-white hover:border-orange-500 text-slate-900";
           if (isAnswered) {
-            if (idx === q.correctAnswer) style = "border-green-500 bg-green-50 text-green-700";
-            else if (idx === selectedIdx) style = "border-red-500 bg-red-50 text-red-700";
-            else style = "border-slate-100 opacity-50";
+            if (idx === q.correctAnswer) style = "border-green-600 bg-green-50 text-green-900 font-bold";
+            else if (idx === selectedIdx) style = "border-red-600 bg-red-50 text-red-900 font-bold";
+            else style = "border-slate-100 opacity-30 text-slate-400";
           }
 
           return (
@@ -109,10 +109,10 @@ export function Quiz({ questions, onComplete }: QuizProps) {
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 bg-slate-50 rounded-2xl border border-slate-100"
+            className="p-6 bg-slate-100 border-2 border-slate-200 rounded-2xl"
           >
-            <p className="text-sm text-slate-600 leading-relaxed">
-              <span className="font-bold text-slate-900">Uitleg:</span> {q.explanation}
+            <p className="text-base text-slate-900 leading-relaxed font-medium">
+              <span className="font-black text-orange-600 uppercase text-xs block mb-1 tracking-tighter">Uitleg:</span> {q.explanation}
             </p>
             <button 
               onClick={nextQuestion}
