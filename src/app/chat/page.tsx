@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Send, Volume2, User, Bot, Loader2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useProgress } from "@/lib/ProgressContext";
 
 interface Message {
   role: "user" | "assistant";
@@ -11,8 +12,9 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const { progress } = useProgress();
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hoi! Ik ben Lars, je Nederlandse tutor. Waar wil je het vandaag over hebben?" }
+    { role: "assistant", content: `Hoi ${progress.settings.userName}! Ik ben Lars, je Nederlandse tutor. Waar wil je het vandaag over hebben?` }
   ]);
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -130,7 +132,10 @@ export default function ChatPage() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: JSON.stringify({ 
+          messages: updatedMessages,
+          settings: progress.settings
+        }),
       });
 
       if (!response.ok) throw new Error("Busy");

@@ -14,7 +14,7 @@ import { useProgress } from "@/lib/ProgressContext";
 import { motion } from "framer-motion";
 
 export default function Home() {
-  const { stats, curriculum } = useProgress();
+  const { stats, curriculum, progress } = useProgress();
   
   const nextLesson = curriculum.find(l => l.status === "available");
 
@@ -23,7 +23,7 @@ export default function Home() {
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-            Hoi! <Sparkles className="h-8 w-8 text-orange-500 fill-orange-500" />
+            Hoi {progress.settings.userName}! <Sparkles className="h-8 w-8 text-orange-500 fill-orange-500" />
           </h2>
           <p className="mt-2 text-slate-500 text-lg font-medium">Laten we vandaag verder gaan met je Nederlands.</p>
         </div>

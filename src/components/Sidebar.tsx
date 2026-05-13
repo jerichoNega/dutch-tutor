@@ -54,9 +54,17 @@ export function Sidebar() {
       <div className="border-t border-slate-800 p-4">
         <Link
           href="/settings"
-          className="group flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white"
+          className={cn(
+            "group flex items-center rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200",
+            pathname === "/settings"
+              ? "bg-orange-500 text-white shadow-lg shadow-orange-900/20"
+              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+          )}
         >
-          <Settings className="mr-3 h-5 w-5 text-slate-400 group-hover:text-white" />
+          <Settings className={cn(
+            "mr-3 h-5 w-5 flex-shrink-0 transition-colors",
+            pathname === "/settings" ? "text-white" : "text-slate-500 group-hover:text-white"
+          )} />
           Settings
         </Link>
       </div>

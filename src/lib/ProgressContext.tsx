@@ -3,11 +3,18 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Lesson, COUTINHO_CURRICULUM } from "@/lib/curriculum";
 
+interface UserSettings {
+  userName: string;
+  difficulty: "A2+" | "B1" | "B1+";
+  aiPersonality: "friendly" | "strict" | "professional";
+}
+
 interface UserProgress {
   completedLessons: string[];
   masteredWords: string[];
   streak: number;
   lastActive: string | null;
+  settings: UserSettings;
 }
 
 interface ProgressContextType {
@@ -15,12 +22,20 @@ interface ProgressContextType {
   curriculum: Lesson[];
   completeLesson: (id: string) => void;
   addMasteredWord: (word: string) => void;
+  updateSettings: (settings: Partial<UserSettings>) => void;
+  resetProgress: () => void;
   stats: {
     completionPercentage: number;
     wordsCount: number;
     activeStreak: number;
   };
 }
+
+const DEFAULT_SETTINGS: UserSettings = {
+  userName: "Student",
+  difficulty: "B1",
+  aiPersonality: "friendly",
+};
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
 
@@ -30,6 +45,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     masteredWords: [],
     streak: 0,
     lastActive: null,
+    settings: DEFAULT_SETTINGS,
   });
 
   const [curriculum, setCurriculum] = useState<Lesson[]>(COUTINHO_CURRICULUM);
@@ -38,20 +54,37 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem("dutch_master_progress");
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setProgress(parsed);
-      
-      // Update curriculum status based on saved progress
-      setCurriculum(prev => prev.map((lesson, idx) => {
-        const isCompleted = parsed.completedLessons.includes(lesson.id);
-        // A lesson is available if it's completed OR if the previous one is completed
-        const isPreviousCompleted = idx === 0 || parsed.completedLessons.includes(prev[idx-1].id);
+      try {
+        const parsed = JSON.parse(saved);
         
-        return {
-          ...lesson,
-          status: isCompleted ? "completed" : (isPreviousCompleted ? "available" : "locked")
+        // Robust hydration with fallbacks for every field
+        const hydratedProgress: UserProgress = {
+          completedLessons: Array.isArray(parsed.completedLessons) ? parsed.completedLessons : [],
+          masteredWords: Array.isArray(parsed.masteredWords) ? parsed.masteredWords : [],
+          streak: typeof parsed.streak === 'number' ? parsed.streak : 0,
+          lastActive: parsed.lastActive || null,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(parsed.settings || {})
+          }
         };
-      }));
+
+        setProgress(hydratedProgress);
+        
+        // Update curriculum status based on saved progress
+        setCurriculum(prev => prev.map((lesson, idx) => {
+          const isCompleted = hydratedProgress.completedLessons.includes(lesson.id);
+          // A lesson is available if it's completed OR if the previous one is completed
+          const isPreviousCompleted = idx === 0 || hydratedProgress.completedLessons.includes(prev[idx-1].id);
+          
+          return {
+            ...lesson,
+            status: isCompleted ? "completed" : (isPreviousCompleted ? "available" : "locked")
+          };
+        }));
+      } catch (e) {
+        console.error("Failed to parse progress, using defaults", e);
+      }
     }
   }, []);
 
@@ -101,6 +134,29 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateSettings = (newSettings: Partial<UserSettings>) => {
+    setProgress(prev => ({
+      ...prev,
+      settings: { ...prev.settings, ...newSettings }
+    }));
+  };
+
+  const resetProgress = () => {
+    const freshProgress: UserProgress = {
+      completedLessons: [],
+      masteredWords: [],
+      streak: 0,
+      lastActive: null,
+      settings: DEFAULT_SETTINGS,
+    };
+    setProgress(freshProgress);
+    setCurriculum(COUTINHO_CURRICULUM.map((l, i) => ({
+      ...l,
+      status: i === 0 ? "available" : "locked"
+    })));
+    localStorage.removeItem("dutch_master_progress");
+  };
+
   const stats = {
     completionPercentage: Math.round((progress.completedLessons.length / COUTINHO_CURRICULUM.length) * 100),
     wordsCount: progress.masteredWords.length,
@@ -108,7 +164,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProgressContext.Provider value={{ progress, curriculum, completeLesson, addMasteredWord, stats }}>
+    <ProgressContext.Provider value={{ progress, curriculum, completeLesson, addMasteredWord, updateSettings, resetProgress, stats }}>
       {children}
     </ProgressContext.Provider>
   );

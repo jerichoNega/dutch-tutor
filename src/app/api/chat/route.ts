@@ -5,15 +5,28 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const { messages, settings } = await req.json();
     
+    const userName = settings?.userName || "Student";
+    const difficulty = settings?.difficulty || "B1";
+    const personality = settings?.aiPersonality || "friendly";
+
+    let personalityPrompt = "";
+    if (personality === "strict") {
+      personalityPrompt = "Be strict about grammar and correct every single mistake. Focus on accuracy.";
+    } else if (personality === "professional") {
+      personalityPrompt = "Speak in a professional, formal manner using 'u' instead of 'je'. Focus on business Dutch.";
+    } else {
+      personalityPrompt = "Speak like a real person, not a textbook. Use natural fillers occasionally (e.g., 'nou', 'eigenlijk'). If they make a mistake, just correct them naturally.";
+    }
+
     const model = genAI.getGenerativeModel({ 
       model: "gemini-flash-latest",
-      systemInstruction: "You are a friendly, natural Dutch language tutor named 'Lars'. " +
-        "The user is at a B1 level. Speak like a real person, not a textbook. " +
-        "Use natural fillers occasionally (e.g., 'nou', 'eigenlijk'). " +
-        "Keep responses short (1-2 sentences) to keep the flow alive. " +
-        "If they make a mistake, just correct them naturally in your response without making it a big lesson unless it's a major error."
+      systemInstruction: `You are a Dutch language tutor named 'Lars'. ` +
+        `The user's name is ${userName}. ` +
+        `The user is at a ${difficulty} level. ` +
+        `${personalityPrompt} ` +
+        `Keep responses short (1-2 sentences) to keep the flow alive.`
     });
 
     const history = messages.slice(0, -1);
