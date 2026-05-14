@@ -64,6 +64,21 @@ export function Quiz({ questions, onComplete }: QuizProps) {
 
   const q = questions[currentIdx];
 
+  if (!q) {
+    return (
+      <div className="text-center p-12 space-y-4">
+        <Loader2 className="h-10 w-10 text-orange-500 animate-spin mx-auto" />
+        <p className="text-slate-500 font-medium">Vragen aan het laden of niet gevonden...</p>
+        <button 
+          onClick={() => onComplete(0)}
+          className="px-6 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold"
+        >
+          Annuleren
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-end">

@@ -44,15 +44,18 @@ export default function MasterclassPage() {
   const [currentStep, setCurrentStep] = useState<MasterclassStep>("overview");
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   const startLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
     setCurrentStep("overview");
+    setGenerationError(null);
   };
 
   const generateStepContent = async (step: MasterclassStep) => {
     if (!selectedLesson) return;
     setIsGenerating(true);
+    setGenerationError(null);
     setCurrentStep(step);
     
     if (step === "quiz") {
@@ -66,10 +69,19 @@ export default function MasterclassPage() {
             grammarFocus: selectedLesson.grammarFocus
           }),
         });
+        
+        if (!response.ok) {
+          throw new Error("Failed to generate quiz");
+        }
+
         const data = await response.json();
-        setQuizQuestions(data.questions || []);
-      } catch (e) {
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error("No questions returned from AI");
+        }
+        setQuizQuestions(data.questions);
+      } catch (e: any) {
         console.error(e);
+        setGenerationError(e.message || "Er is iets misgegaan bij het genereren van de quiz.");
       }
     }
     setIsGenerating(false);
@@ -295,18 +307,33 @@ export default function MasterclassPage() {
                   )}
 
                   {currentStep === "quiz" && (
-                    <div>
+                    <div className="w-full">
                       {isGenerating ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                           <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
                           <p className="font-black text-slate-400 uppercase tracking-widest text-xs text-center">AI bereidt je examen voor...</p>
                         </div>
+                      ) : generationError ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+                          <div className="p-4 bg-red-100 text-red-600 rounded-full">
+                            <Undo2 className="h-8 w-8" />
+                          </div>
+                          <div>
+                            <h4 className="text-2xl font-black text-slate-900">Oeps! Er ging iets mis</h4>
+                            <p className="text-slate-500 mt-2">{generationError}</p>
+                          </div>
+                          <button 
+                            onClick={() => generateStepContent("quiz")}
+                            className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black hover:scale-105 transition-all"
+                          >
+                            Probeer het opnieuw
+                          </button>
+                        </div>
                       ) : (
                         <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
                       )}
                     </div>
-                  )}
-              </div>
+                  )}              </div>
             </motion.div>
           </motion.div>
         )}
