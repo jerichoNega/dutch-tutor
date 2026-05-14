@@ -120,6 +120,11 @@ export default function ChatPage() {
     const content = textOverride || input;
     if (!content.trim()) return;
 
+    // Safety check for context
+    if (!progress || !progress.settings) {
+      console.warn("Settings not loaded yet, using defaults");
+    }
+
     setError(null);
     const newMessage: Message = { role: "user", content };
     const updatedMessages = [...messagesRef.current, newMessage];
@@ -134,7 +139,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           messages: updatedMessages,
-          settings: progress.settings
+          settings: progress?.settings || { userName: "Student", difficulty: "B1", aiPersonality: "friendly" }
         }),
       });
 
