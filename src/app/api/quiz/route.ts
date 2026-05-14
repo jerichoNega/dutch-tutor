@@ -15,11 +15,19 @@ export async function POST(req: Request) {
         "Format your response as a JSON array: [{\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"...\"], \"correctAnswer\": index, \"explanation\": \"...\"}]"
     });
 
-    const result = await model.generateContent(`Create a B1 Dutch quiz for lesson: ${lessonId}`);
+    const result = await model.generateContent(`Create a 5-question B1 Dutch quiz for lesson: ${lessonId}. Return ONLY the JSON array.`);
     const response = await result.response;
     const text = response.text();
     
-    const jsonStr = text.replace(/```json|```/g, "").trim();
+    // Improved cleaning: find the first [ and last ] to extract JSON
+    const startIdx = text.indexOf("[");
+    const endIdx = text.lastIndexOf("]");
+    
+    if (startIdx === -1 || endIdx === -1) {
+      throw new Error("Invalid AI response format");
+    }
+
+    const jsonStr = text.substring(startIdx, endIdx + 1);
     const questions = JSON.parse(jsonStr);
 
     return NextResponse.json({ questions });
