@@ -295,3 +295,59 @@ export default function MasterclassPage() {
                   )}
 
                   {currentStep === "quiz" && (
+                    <div>
+                      {isGenerating ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                          <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
+                          <p className="font-black text-slate-400 uppercase tracking-widest text-xs text-center">AI bereidt je examen voor...</p>
+                        </div>
+                      ) : (
+                        <Quiz questions={quizQuestions} onComplete={handleQuizComplete} />
+                      )}
+                    </div>
+                  )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function LessonNode({ lesson, onClick }: { lesson: Lesson, onClick: () => void }) {
+  const isLocked = lesson.status === "locked";
+  const isCompleted = lesson.status === "completed";
+  const Icon = BRANCH_ICONS[lesson.branch];
+
+  return (
+    <motion.button
+      whileHover={!isLocked ? { scale: 1.05, y: -5 } : {}}
+      whileTap={!isLocked ? { scale: 0.95 } : {}}
+      onClick={() => !isLocked && onClick()}
+      className={cn(
+        "relative w-48 p-6 rounded-[2rem] border-4 transition-all flex flex-col items-center text-center",
+        isLocked 
+          ? "bg-slate-100 border-slate-200 opacity-60 grayscale cursor-not-allowed" 
+          : isCompleted
+            ? "bg-white border-green-500 shadow-xl shadow-green-100"
+            : "bg-white border-slate-900 shadow-2xl shadow-slate-200"
+      )}
+    >
+      <div className={cn(
+        "p-4 rounded-2xl mb-4 text-white",
+        isLocked ? "bg-slate-300" : isCompleted ? "bg-green-500" : BRANCH_COLORS[lesson.branch]
+      )}>
+        {isLocked ? <Lock className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+      </div>
+      <h4 className="font-black text-slate-900 text-sm leading-tight mb-1">{lesson.title}</h4>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{lesson.topic}</p>
+      
+      {isCompleted && (
+        <div className="absolute -top-3 -right-3 bg-green-500 text-white p-1.5 rounded-full shadow-lg">
+          <Play className="h-3 w-3 fill-current" />
+        </div>
+      )}
+    </motion.button>
+  );
+}
