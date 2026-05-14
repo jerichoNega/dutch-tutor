@@ -1,9 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const API_KEY = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY || "");
 
 export async function POST(req: Request) {
+  if (!API_KEY) {
+    return NextResponse.json({ 
+      error: "Missing Gemini API Key. Please add GEMINI_API_KEY to your Vercel Environment Variables." 
+    }, { status: 401 });
+  }
+
   try {
     const { word } = await req.json();
     
